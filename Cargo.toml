@@ -1,0 +1,8 @@
+[package]
+name = "icosphere"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bytemuck = "1.23.0"
+glam = "0.30.3"

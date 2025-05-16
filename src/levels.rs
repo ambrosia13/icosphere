@@ -5,6 +5,7 @@ use crate::{Icosphere, IcosphereVertex, triangle_count};
 /// A collection of icosphere subdivisions, which can be used for rendering, similar to LODs.
 /// We use terminology "levels", because LOD usually makes the mesh less detailed as it increases,
 /// while this tesselates the mesh into more detailed shapes as the binning depth increases.  
+#[derive(Debug, Clone)]
 pub struct IcosphereLevels<T, S>
 where
     T: IcosphereVertex,

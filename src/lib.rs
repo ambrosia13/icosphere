@@ -282,6 +282,8 @@ impl<T: IcosphereVertex> Icosphere<T> for StaticIcosphere<T> {
     }
 }
 
+/// A sparse icosphere that generates vertices and triangles on-the-fly, using dramatically less memory at high binning depths.
+#[derive(Debug, Clone)]
 pub struct SparseIcosphere<T: IcosphereVertex> {
     /// Since vertices are added on-the-fly as needed, don't expect this to be in any particular order.
     pub vertices: Vec<T>,

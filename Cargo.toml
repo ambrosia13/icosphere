@@ -1,7 +1,13 @@
 [package]
 name = "icosphere"
+description = "Subdivided icosahedrons for rendering and meshing, both sparse and tightly packed"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ambrosia13/icosphere"
+keywords = ["gamedev", "graphics", "mesh", "rendering"]
+categories = ["data-structures", "game-development", "rendering"]
+
 
 [dependencies]
 bytemuck = "1.23.0"

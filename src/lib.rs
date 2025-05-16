@@ -36,6 +36,9 @@ impl IcosphereVertex for Vec3 {
 }
 
 pub trait Icosphere<T: IcosphereVertex> {
+    /// A constructor. If the icosphere is sparse, this may create an empty one
+    fn create(binning_depth: usize) -> Self;
+
     /// The number of subdivisions from the regular icosahedron.
     fn binning_depth(&self) -> usize;
 
@@ -195,6 +198,10 @@ impl<T: IcosphereVertex> StaticIcosphere<T> {
 }
 
 impl<T: IcosphereVertex> Icosphere<T> for StaticIcosphere<T> {
+    fn create(binning_depth: usize) -> Self {
+        Self::nth(binning_depth)
+    }
+
     fn binning_depth(&self) -> usize {
         self.binning_depth
     }
@@ -355,6 +362,10 @@ impl<T: IcosphereVertex> SparseIcosphere<T> {
 }
 
 impl<T: IcosphereVertex> Icosphere<T> for SparseIcosphere<T> {
+    fn create(binning_depth: usize) -> Self {
+        Self::empty(binning_depth)
+    }
+
     fn binning_depth(&self) -> usize {
         self.binning_depth
     }

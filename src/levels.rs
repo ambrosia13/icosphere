@@ -22,6 +22,9 @@ where
     /// for its subdivisions.
     pub min_binning_depth: usize,
 
+    /// The binning depth at the highest level.
+    pub max_binning_depth: usize,
+
     /// The increase in binning depth for every increase in level.
     ///
     /// Must be chosen such that [`Self::max_binning_depth`] is exactly the binning depth at the
@@ -36,9 +39,48 @@ where
     T: IcosphereVertex,
     S: Icosphere<T>,
 {
+    /// Constructs all necessary icospheres given the minimum depth, the level count, and the depth step.
+    /// The icospheres will be potentially empty/not generated yet.
+    pub fn new(min_binning_depth: usize, level_count: usize, binning_depth_step: usize) -> Self {
+        let max_binning_depth = min_binning_depth + (level_count - 1) * binning_depth_step;
+        let mut levels = Vec::with_capacity(max_binning_depth - min_binning_depth + 1);
+
+        for binning_depth in min_binning_depth..=max_binning_depth {
+            levels.push(S::create(binning_depth));
+        }
+
+        Self {
+            levels,
+            min_binning_depth,
+            max_binning_depth,
+            binning_depth_step,
+            _phantom: PhantomData,
+        }
+    }
+
     /// Get the icosahedron at the specified level
     pub fn get(&self, level: usize) -> &S {
         &self.levels[level * self.binning_depth_step]
+    }
+
+    /// Same as [`Self::get`] but mutable
+    pub fn get_mut(&mut self, level: usize) -> &mut S {
+        &mut self.levels[level * self.binning_depth_step]
+    }
+
+    /// Flattens the triangle indices into a contiguous array. Should be used for things like
+    /// index buffers over this chunk.
+    pub fn flattened_chunk_indices(&self, level: usize, chunk_index: usize) -> Vec<u32> {
+        let mut indices = vec![0u32; 3 * self.chunk_size()]; // Multiplied by 3 for vertex count
+        let subchunk_indices = self.subchunk_indices(chunk_index);
+
+        for triangle_index in subchunk_indices {
+            let ico = self.get(level);
+            indices[(triangle_index * 3)..(triangle_index * 3 + 3)]
+                .copy_from_slice(&ico.triangle(triangle_index));
+        }
+
+        indices
     }
 
     /// The binning depth at a specific detail level.
@@ -59,6 +101,11 @@ where
         Some((binning_depth - self.min_binning_depth) / self.binning_depth_step)
     }
 
+    /// The total number of levels.
+    pub fn level_count(&self) -> usize {
+        ((self.max_binning_depth - self.min_binning_depth) / self.binning_depth_step) + 1
+    }
+
     /// The number of triangles in each "chunk". This is useful if you want to split draw calls into
     /// chunks, e.g., for culling purposes, or for dynamic detail level.
     ///
@@ -76,11 +123,18 @@ where
     /// If using dynamic detail level, when rendering a chunk index for level `n`, the sub-chunks inside this chunk
     /// (or in other words, the range of child chunk indices that this chunk index covers for level `n + 1`) are
     /// `(chunk_index * chunk_size)..(chunk_index * chunk_size + chunk_size)`.
+    ///
+    /// If level == 0, and it corresponds to a binning depth of zero, then the triangle count of the regular
+    /// icosahedron is returned (20). That is to say, the regular icosahedron is not chunked at all, because
+    /// there is no logical way to split its rendering into chunks (and it's a very simple mesh that should anyway
+    /// be drawn all at once).
     pub fn chunk_count(&self, level: usize) -> usize {
-        assert!(level > 0, "chunk_count is only defined at level > 0");
-
-        let binning_depth = self.binning_depth_at_level(level - 1);
-        triangle_count(binning_depth)
+        if self.binning_depth_at_level(level) == 0 {
+            triangle_count(0)
+        } else {
+            let binning_depth = self.binning_depth_at_level(level - 1);
+            triangle_count(binning_depth)
+        }
     }
 
     /// For `chunk_index` at `level`, returns the range of subchunk indexes at `level + 1`.
@@ -92,5 +146,10 @@ where
         let end = start + size;
 
         start..end
+    }
+
+    /// Returns a range of all chunk indices for the given level.
+    pub fn chunk_indices(&self, level: usize) -> Range<usize> {
+        0..self.chunk_count(level)
     }
 }

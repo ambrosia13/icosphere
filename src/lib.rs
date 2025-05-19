@@ -71,7 +71,9 @@ pub trait Icosphere<T: IcosphereVertex> {
 
     /// Subdivides `previous_triangles[parent_index]` into four children starting at `current_triangles[parent_index * 4]`.
     /// The previous binning depth must be 1 less than the current binning depth.
-    fn subdivide_chunk(&mut self, previous: &Self, parent_index: usize);
+    ///
+    /// Returns false if nothing was generated, true otherwise.
+    fn subdivide_chunk(&mut self, previous: &Self, parent_index: usize) -> bool;
 
     /// Subdivide the entire icosphere.
     fn subdivide(&self) -> Self;
@@ -223,7 +225,9 @@ impl<T: IcosphereVertex> Icosphere<T> for StaticIcosphere<T> {
     }
 
     /// Doesn't do anything because static icospheres are already fully subdivided.
-    fn subdivide_chunk(&mut self, _previous: &Self, _parent_index: usize) {}
+    fn subdivide_chunk(&mut self, _previous: &Self, _parent_index: usize) -> bool {
+        false
+    }
 
     fn subdivide(&self) -> Self {
         let new_vertex_count = vertex_count(self.binning_depth + 1);
@@ -394,7 +398,7 @@ impl<T: IcosphereVertex> Icosphere<T> for SparseIcosphere<T> {
         self.vertices.len()
     }
 
-    fn subdivide_chunk(&mut self, previous: &Self, parent_index: usize) {
+    fn subdivide_chunk(&mut self, previous: &Self, parent_index: usize) -> bool {
         // can only subdivide adjacent binning depths
         if previous.binning_depth + 1 != self.binning_depth {
             panic!("Attempted to subdivide icospheres with non-adjacent depth");
@@ -402,13 +406,13 @@ impl<T: IcosphereVertex> Icosphere<T> for SparseIcosphere<T> {
 
         // all triangles generated
         if self.triangles.len() == self.total_triangle_count() {
-            return;
+            return false;
         }
 
         // if teh base triangle is generated, assume the whole chunk is generated
         let all_triangles_present = self.triangles.contains_key(&(parent_index * 4));
         if all_triangles_present {
-            return;
+            return false;
         }
 
         let mut new_vertex_indices = [0; 3];
@@ -477,6 +481,8 @@ impl<T: IcosphereVertex> Icosphere<T> for SparseIcosphere<T> {
         self.triangles.insert(new_triangle_index + 1, [b, e, d]);
         self.triangles.insert(new_triangle_index + 2, [c, f, e]);
         self.triangles.insert(new_triangle_index + 3, [d, e, f]);
+
+        true
     }
 
     /// Requires this icosphere to be completely generated before subdividing

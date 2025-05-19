@@ -16,7 +16,7 @@ checksum = "6b46b9ca4690308844c644e7c634d68792467260e051c8543e0c7871662b3ba7"
 
 [[package]]
 name = "icosphere"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "glam",

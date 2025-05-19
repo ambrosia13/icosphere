@@ -58,14 +58,31 @@ where
         }
     }
 
+    fn index_at_level(&self, level: usize) -> usize {
+        level * self.binning_depth_step
+    }
+
+    /// Ensures the specified chunk is generated. Returns `true` if it was generated, and `false`
+    /// if it has already been generated.
+    pub fn update_chunk(&mut self, level: usize, chunk_index: usize) -> bool {
+        let index = self.index_at_level(level);
+        let (previous_levels, next_levels) = self.levels.split_at_mut(index);
+
+        let previous = previous_levels.last().unwrap();
+        let current = next_levels.first_mut().unwrap();
+
+        current.subdivide_chunk(previous, chunk_index)
+    }
+
     /// Get the icosahedron at the specified level
     pub fn get(&self, level: usize) -> &S {
-        &self.levels[level * self.binning_depth_step]
+        &self.levels[self.index_at_level(level)]
     }
 
     /// Same as [`Self::get`] but mutable
     pub fn get_mut(&mut self, level: usize) -> &mut S {
-        &mut self.levels[level * self.binning_depth_step]
+        let index = self.index_at_level(level);
+        &mut self.levels[index]
     }
 
     /// Flattens the triangle indices into a contiguous array. Should be used for things like
